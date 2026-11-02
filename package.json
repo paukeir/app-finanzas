@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.7"
   },
   "scripts": {
     "start": "node server.mjs",
     "start:private": "node server.mjs --private-history",
     "test": "node --test --test-isolation=none tests/*.test.mjs",
-    "check": "node --check src/core.js && node --check src/app.js && node --check server.mjs",
+    "check": "node --check src/core.js && node --check src/app.js && node --check server.mjs && node --check scripts/build.mjs",
     "test:e2e": "playwright test",
-    "format": "prettier --write src tests server.mjs playwright.config.mjs index.html package.json"
+    "format": "prettier --write src tests server.mjs playwright.config.mjs index.html package.json scripts",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

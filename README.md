@@ -2,6 +2,16 @@
 
 Aplicación web privada, en español, para llevar una cuenta principal, quincenas presupuestarias, conciliación y fondos virtuales. MVP sin conexión bancaria y sin servicios externos. No contiene datos financieros de ejemplo ni incluye el CSV privado en Git.
 
+## Acceder desde móvil y ordenador
+
+La web está preparada para GitHub Pages en `https://paukeir.github.io/app-finanzas/`. El workflow `.github/workflows/pages.yml` publica automáticamente los cambios de `main`, tras comprobar la sintaxis y las pruebas. La URL solo estará disponible cuando GitHub haya completado el despliegue.
+
+Si GitHub no permite habilitar Pages desde el workflow, el propietario debe seleccionar **Settings → Pages → Build and deployment → Source: GitHub Actions** y repetir el workflow **Publicar Finanzas en GitHub Pages** desde Actions. No se necesita otro proveedor ni ejecutar comandos en el móvil.
+
+La publicación contiene exclusivamente HTML, CSS y JavaScript de `dist/`; nunca incluye el histórico, `.local`, copias, capturas, adjuntos ni dependencias de desarrollo. `npm run build` genera esa carpeta a partir de una lista explícita de archivos. Las rutas relativas permiten servirla dentro de `/app-finanzas/`.
+
+**El enlace permite abrir la app en ambos dispositivos; los datos no se sincronizan automáticamente.** Se almacenan en cada navegador. Para continuar con el mismo histórico, exporta una copia JSON y restáurala en el otro dispositivo. Los dos dispositivos pueden divergir: la restauración sustituye los datos, no fusiona cambios. La sincronización automática requeriría una ampliación con almacenamiento y acceso privado; no está implementada.
+
 ## Ejecutar
 
 Requiere **Node.js 24 LTS** (mínimo 22.7) y npm. La aplicación no necesita dependencias de ejecución; las dependencias de desarrollo son para probarla.
@@ -12,7 +22,7 @@ npm ci --ignore-scripts
 npm start
 ```
 
-Abre `http://127.0.0.1:5173` en tu propio ordenador. El servidor escucha exclusivamente en loopback. En el entorno de onboarding se usa para comprobaciones internas; no se ofrece una vista previa pública. Para acceder en otro equipo o iPhone hace falta desplegar la aplicación en un origen privado con HTTPS y control de acceso; ese despliegue no está incluido. El diseño se prueba en viewport de iPhone con Chromium, no en un dispositivo Safari real.
+Abre `http://127.0.0.1:5173` en tu propio ordenador. El servidor escucha exclusivamente en loopback. En el entorno de onboarding se usa para comprobaciones internas; no se ofrece una vista previa pública. Para abrirla en un móvil u otro ordenador sin ejecutar el servidor, utiliza la publicación de GitHub Pages descrita arriba. El código de la web es público; los datos importados permanecen en cada navegador y no se incluyen en la publicación. El diseño se prueba en viewport de iPhone con Chromium, no en un dispositivo Safari real.
 
 La app y los datos funcionan sin Internet una vez iniciado el servidor. No hay service worker: para abrir o recargar la página, el servidor debe seguir en ejecución. No abras `index.html` directamente con `file://`.
 
@@ -72,7 +82,7 @@ Las pruebas unitarias cubren importes exactos, fechas, quincenas, nóminas, CSV,
 
 Los datos de las pruebas públicas son **sintéticos exclusivamente para las pruebas**, nunca se cargan en la aplicación. Si existe `.local/historico.csv`, también se ejecuta una comprobación privada del histórico real y su importación en ambos tamaños. En otros checkouts esas pruebas privadas quedan marcadas como omitidas. No se guardan capturas ni trazas de datos reales en Git.
 
-No hay paso de compilación: módulos JavaScript nativos y CSS se sirven directamente. La lógica monetaria opera en céntimos enteros; la división por 100 se usa solo para presentar importes. El servidor utiliza únicamente la biblioteca estándar de Node.js y una lista explícita de archivos públicos.
+La aplicación usa módulos JavaScript nativos y CSS. `npm run build` prepara una publicación estática en `dist/` sin copiar datos privados. La lógica monetaria opera en céntimos enteros; la división por 100 se usa solo para presentar importes. El servidor utiliza únicamente la biblioteca estándar de Node.js y una lista explícita de archivos públicos.
 
 ## Estructura
 

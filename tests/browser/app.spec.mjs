@@ -10,13 +10,11 @@ async function openImport(page) {
 }
 async function preview(page, text) {
   await openImport(page);
-  await page
-    .locator("#csv-file")
-    .setInputFiles({
-      name: "prueba-sintetica.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(text),
-    });
+  await page.locator("#csv-file").setInputFiles({
+    name: "prueba-sintetica.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(text),
+  });
   await page.getByRole("button", { name: "Generar vista previa" }).click();
 }
 async function importSample(page) {
@@ -134,13 +132,11 @@ test("duplicados, edición de presupuesto y restauración con confirmación", as
     .getByRole("button", { name: "Configuración", exact: true })
     .click();
   copy.target = 12345;
-  await page
-    .locator("#backup-file")
-    .setInputFiles({
-      name: "copia.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(copy)),
-    });
+  await page.locator("#backup-file").setInputFiles({
+    name: "copia.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(copy)),
+  });
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("clara.finanzas.v1")).target,

@@ -21,6 +21,7 @@ import {
   penultimateBusinessDay,
 } from "./core.js";
 const KEY = "clara.finanzas.v1";
+const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
 let state = initialState(),
   storageError = "";
 try {
@@ -228,7 +229,7 @@ function render() {
 function modalView() {
   let content = "";
   if (modal.type === "import")
-    content = `<h2 id="modal-title">Importar movimientos</h2><p>Revisa las columnas, el orden y la conciliación antes de guardar. Las sugerencias de categoría no asignan ahorro.</p><div class="import-choices"><label class="file-label">Seleccionar CSV<input id="csv-file" type="file" accept=".csv,text/csv"></label><button class="secondary" data-action="local-history">Abrir histórico local privado</button></div><small>El histórico local solo está disponible con <code>npm run start:private</code>. También puedes seleccionar el CSV adjunto directamente.</small>${
+    content = `<h2 id="modal-title">Importar movimientos</h2><p>Revisa las columnas, el orden y la conciliación antes de guardar. Las sugerencias de categoría no asignan ahorro.</p><div class="import-choices"><label class="file-label">Seleccionar CSV<input id="csv-file" type="file" accept=".csv,text/csv"></label>${isLocal ? '<button class="secondary" data-action="local-history">Abrir histórico local privado</button>' : ""}</div>${isLocal ? "<small>El histórico local solo está disponible con <code>npm run start:private</code>. También puedes seleccionar el CSV adjunto directamente.</small>" : "<small>Selecciona el extracto desde tu dispositivo. Se lee en tu navegador y no se envía a un servidor.</small>"}${
       parsed
         ? `<h3>${e(importName)} · ${parsed.rows.length} filas</h3><form id="mapping-form"><div class="mapping-grid">${[
             ["date", "Fecha bancaria", "fecha"],
