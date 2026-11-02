@@ -10,6 +10,7 @@ import {
   position,
   moveFunds,
   addCommitment,
+  addManualTransaction,
   settleCommitment,
   goalProgress,
   monthSummary,
@@ -115,7 +116,7 @@ const tag = (text, tone = "") => `<span class="tag ${tone}">${e(text)}</span>`;
 const metric = (label, value, detail, tone = "") =>
   `<article class="metric ${tone}"><span>${e(label)}</span><strong>${money(value)}</strong><small>${e(detail)}</small></article>`;
 const empty = (title, text) =>
-  `<div class="empty"><span class="empty-icon">◎</span><h3>${e(title)}</h3><p>${e(text)}</p><button data-action="import" class="primary">Importar movimientos</button></div>`;
+  `<div class="empty"><span class="empty-icon">◎</span><h3>${e(title)}</h3><p>${e(text)}</p><button data-action="manual" class="primary">Añadir movimiento</button></div>`;
 const field = (label, control) => `<label>${e(label)}${control}</label>`;
 function transactionsTable(ts, editable = false) {
   return `<div class="table-wrap"><table><thead><tr><th>Fecha bancaria</th><th>Concepto / categoría</th><th>Presupuesto</th><th class="right">Importe</th><th class="right">Saldo posterior</th>${editable ? "<th>Acción</th>" : ""}</tr></thead><tbody>${ts.map((t) => `<tr><td>${dateLabel(t.date)}<small>Valor: ${e(t.valueDate)} · ${e(t.source || "CSV")}</small></td><td><b>${e(t.description)}</b><small>${e(t.category)}</small></td><td>${e(t.budget.month)} · Q${t.budget.half}</td><td class="right ${t.amount > 0 ? "positive" : ""}">${t.amount > 0 ? "+" : ""}${money(t.amount)}</td><td class="right">${t.balance === null ? "—" : money(t.balance)}</td>${editable ? `<td><button class="link" data-action="edit" data-id="${e(t.id)}">Editar</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
@@ -124,7 +125,7 @@ function home() {
   if (!state.transactions.length)
     return empty(
       "Tu historia financiera empieza aquí",
-      "Importa tu extracto para comprobar el saldo y organizar tus quincenas. No añadimos datos de ejemplo.",
+      "Añade tus gastos, recibos pagados e ingresos, o importa un extracto. No añadimos datos de ejemplo.",
     );
   const p = position(state),
     g = goalProgress(state, month),
@@ -219,7 +220,7 @@ function settings() {
 }
 function render() {
   document.querySelector("#app").innerHTML =
-    `<aside class="sidebar"><a class="brand" href="#" data-nav="home"><span class="brand-icon">c</span><span>clara<small>FINANZAS PERSONALES</small></span></a><div class="workspace-label">MI ESPACIO</div><nav aria-label="Navegación principal">${nav.map(([k, label]) => `<button data-nav="${k}" class="nav-item ${page === k ? "active" : ""}" ${page === k ? 'aria-current="page"' : ""}><span aria-hidden="true">${icons[k]}</span>${label}</button>`).join("")}</nav><div class="sidebar-bottom"><span class="privacy-dot"></span><b>Un espacio privado</b><p>Tus datos se quedan<br>en este navegador.</p><small>Local · Sin conexión bancaria</small></div></aside><main><header><div><div class="eyebrow">TU ESPACIO FINANCIERO</div><h1>${names[page]}</h1><p>Decisiones tranquilas, cuentas claras.</p></div><div class="header-actions"><label class="month-picker"><span>Mes presupuestario</span><input id="month" type="month" min="2026-08" max="2100-12" value="${e(month)}" aria-label="Mes presupuestario"></label><button class="primary" data-action="import">＋ Importar CSV</button></div></header>${storageError ? `<div class="alert danger">${e(storageError)}</div>` : ""}${notice ? `<div class="notice" role="status">${e(notice)}<button data-action="dismiss" aria-label="Cerrar aviso">×</button></div>` : ""}<div id="page-content">${{ home, calendar, transactions, reconciliation, funds, loans, settings }[page]()}</div><footer>Clara · Cada cifra tiene un origen. Cada reserva, una decisión.</footer></main>${modal ? modalView() : ""}`;
+    `<aside class="sidebar"><a class="brand" href="#" data-nav="home"><span class="brand-icon">c</span><span>clara<small>FINANZAS PERSONALES</small></span></a><div class="workspace-label">MI ESPACIO</div><nav aria-label="Navegación principal">${nav.map(([k, label]) => `<button data-nav="${k}" class="nav-item ${page === k ? "active" : ""}" ${page === k ? 'aria-current="page"' : ""}><span aria-hidden="true">${icons[k]}</span>${label}</button>`).join("")}</nav><div class="sidebar-bottom"><span class="privacy-dot"></span><b>Un espacio privado</b><p>Tus datos se quedan<br>en este navegador.</p><small>Local · Sin conexión bancaria</small></div></aside><main><header><div><div class="eyebrow">TU ESPACIO FINANCIERO</div><h1>${names[page]}</h1><p>Decisiones tranquilas, cuentas claras.</p></div><div class="header-actions"><label class="month-picker"><span>Mes presupuestario</span><input id="month" type="month" min="2026-08" max="2100-12" value="${e(month)}" aria-label="Mes presupuestario"></label><button class="primary" data-action="manual">＋ Añadir movimiento</button><button class="secondary" data-action="import">＋ Importar CSV</button></div></header>${storageError ? `<div class="alert danger">${e(storageError)}</div>` : ""}${notice ? `<div class="notice" role="status">${e(notice)}<button data-action="dismiss" aria-label="Cerrar aviso">×</button></div>` : ""}<div id="page-content">${{ home, calendar, transactions, reconciliation, funds, loans, settings }[page]()}</div><footer>Clara · Cada cifra tiene un origen. Cada reserva, una decisión.</footer></main>${modal ? modalView() : ""}`;
   if (modal) {
     document
       .querySelector(".modal input, .modal select, .modal button")
@@ -228,6 +229,8 @@ function render() {
 }
 function modalView() {
   let content = "";
+  if (modal.type === "manual")
+    content = `<h2 id="modal-title">Añadir movimiento</h2><p>Registra un gasto, recibo ya pagado o ingreso. Para un recibo pendiente, utiliza Compromisos.</p><form id="manual-form">${field("Tipo", '<select name="kind"><option value="expense">Gasto / recibo pagado</option><option value="income">Ingreso / nómina</option></select>')}${field("Concepto", '<input name="description" required maxlength="300" placeholder="Supermercado, luz, nómina…">')}<div class="form-row">${field("Fecha del movimiento", `<input name="date" type="date" required value="${today()}">`)}${field("Importe (€)", '<input name="amount" inputmode="decimal" required placeholder="Importe positivo, por ejemplo 25,50">')}</div>${field("Categoría", `<select name="category">${CATEGORIES.map((c) => `<option ${c === "Consumo" ? "selected" : ""}>${e(c)}</option>`).join("")}</select>`)}${field("Saldo posterior (€), opcional", '<input name="balance" inputmode="decimal" placeholder="Saldo real de la cuenta después de este movimiento">')}<p class="muted">Sin ningún saldo informado, el saldo de cuenta queda pendiente. Los movimientos sin saldo posterior no se marcan como conciliados. En un mismo día se añade después de los ya registrados; comprueba ese orden si introduces saldos. La nómina de fin de mes se asigna al presupuesto del mes siguiente.</p><button class="primary">Guardar movimiento</button></form>`;
   if (modal.type === "import")
     content = `<h2 id="modal-title">Importar movimientos</h2><p>Revisa las columnas, el orden y la conciliación antes de guardar. Las sugerencias de categoría no asignan ahorro.</p><div class="import-choices"><label class="file-label">Seleccionar CSV<input id="csv-file" type="file" accept=".csv,text/csv"></label>${isLocal ? '<button class="secondary" data-action="local-history">Abrir histórico local privado</button>' : ""}</div>${isLocal ? "<small>El histórico local solo está disponible con <code>npm run start:private</code>. También puedes seleccionar el CSV adjunto directamente.</small>" : "<small>Selecciona el extracto desde tu dispositivo. Se lee en tu navegador y no se envía a un servidor.</small>"}${
       parsed
@@ -318,6 +321,10 @@ document.addEventListener("click", async (event) => {
   }
   const action = button.dataset.action;
   try {
+    if (action === "manual") {
+      modal = { type: "manual" };
+      render();
+    }
     if (action === "import") {
       modal = { type: "import" };
       parsed = null;
@@ -460,6 +467,13 @@ document.addEventListener("click", async (event) => {
 });
 document.addEventListener("change", async (event) => {
   try {
+    if (
+      event.target.form?.id === "manual-form" &&
+      event.target.name === "kind"
+    ) {
+      event.target.form.elements.category.value =
+        event.target.value === "income" ? "Otros ingresos" : "Consumo";
+    }
     if (event.target.id === "month") {
       const value = event.target.value;
       if (!validDate(value + "-01") || value < "2026-08" || value > "2100-12")
@@ -490,6 +504,17 @@ document.addEventListener("submit", (event) => {
   const form = event.target;
   const f = Object.fromEntries(new FormData(form));
   try {
+    if (form.id === "manual-form") {
+      const next = addManualTransaction(state, f);
+      save(next);
+      month =
+        next.transactions
+          .filter((t) => t.source === "Manual")
+          .findLast((t) => t.date === f.date)?.budget.month ||
+        f.date.slice(0, 7);
+      modal = null;
+      flash("Movimiento guardado. La conciliación se ha recalculado.");
+    }
     if (form.id === "mapping-form") {
       const required = [f.date, f.description, f.amount];
       if (required.some((v) => !v))

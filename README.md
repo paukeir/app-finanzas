@@ -26,6 +26,12 @@ Abre `http://127.0.0.1:5173` en tu propio ordenador. El servidor escucha exclusi
 
 La app y los datos funcionan sin Internet una vez iniciado el servidor. No hay service worker: para abrir o recargar la página, el servidor debe seguir en ejecución. No abras `index.html` directamente con `file://`.
 
+## Añadir movimientos sin CSV
+
+Pulsa **Añadir movimiento** para registrar gastos, recibos ya pagados, nóminas y otros ingresos. Selecciona entrada o salida e introduce concepto, fecha, importe positivo y categoría. La categoría Nómina aplica la asignación quincenal habitual; puedes revisarla después en Movimientos. Los recibos todavía pendientes se registran en Compromisos, y se vinculan al cargo cuando se pagan.
+
+El saldo posterior es opcional y debe ser el saldo real tras esa operación. Sin ningún saldo informado, la cuenta queda con saldo desconocido. No se inventa un saldo inicial de cero ni se marcan como conciliados los movimientos sin saldo. En una misma fecha los nuevos movimientos se añaden después de los existentes; revisa el orden y la conciliación si introduces operaciones antiguas. Se guardan en el navegador y se incluyen en las copias JSON y exportaciones CSV.
+
 ## Primera importación del histórico
 
 1. Pulsa **Importar CSV** y selecciona el CSV original.

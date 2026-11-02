@@ -23,6 +23,42 @@ async function importSample(page) {
     .getByRole("button", { name: "Confirmar importación de 3 movimientos" })
     .click();
 }
+test("añadir nómina y recibo sin CSV y conservarlos al recargar", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "＋ Añadir movimiento", exact: true })
+    .click();
+  let form = page.locator("#manual-form");
+  await form.getByRole("combobox", { name: "Tipo", exact: true }).selectOption("income");
+  await form.getByLabel("Concepto", { exact: true }).fill("Nómina manual");
+  await form.getByLabel("Fecha del movimiento").fill("2027-01-28");
+  await form.getByLabel("Importe (€)", { exact: true }).fill("1500,50");
+  await form.getByRole("combobox", { name: "Categoría", exact: true }).selectOption("Nómina");
+  await form.getByRole("button", { name: "Guardar movimiento" }).click();
+  await page
+    .getByRole("button", { name: "＋ Añadir movimiento", exact: true })
+    .click();
+  form = page.locator("#manual-form");
+  await form.getByLabel("Concepto", { exact: true }).fill("Recibo luz manual");
+  await form.getByLabel("Fecha del movimiento").fill("2027-01-29");
+  await form.getByLabel("Importe (€)", { exact: true }).fill("50,25");
+  await form.getByRole("combobox", { name: "Categoría", exact: true }).selectOption("Recibo");
+  await form.getByLabel("Saldo posterior (€), opcional").fill("1450,25");
+  await form.getByRole("button", { name: "Guardar movimiento" }).click();
+  await page.reload();
+  await expect(page.locator(".hero-money")).toContainText(/1\.?450,25/);
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("clara.finanzas.v1")),
+  );
+  expect(state.transactions.map((t) => t.amount)).toEqual([150050, -5025]);
+  expect(state.transactions[0].budget).toEqual({ month: "2027-02", half: 1 });
+  expect(state.transactions[0].source).toBe("Manual");
+  await expect(
+    page.getByText("Revisar conciliación", { exact: true }),
+  ).toBeVisible();
+});
 test("importar, reservar, impedir sobregiro, persistir y exportar", async ({
   page,
 }) => {

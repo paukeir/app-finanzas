@@ -14,6 +14,7 @@ import {
   position,
   moveFunds,
   addCommitment,
+  addManualTransaction,
   settleCommitment,
   goalProgress,
   monthSummary,
@@ -32,6 +33,48 @@ const csv =
 const imported = () =>
   previewImport(parseCSV(csv), mapping, "asc").transactions;
 const base = () => ({ ...initialState(), transactions: imported() });
+test("registro manual: signos, saldo opcional, nómina y copias", () => {
+  const input = {
+    date: "2027-01-28",
+    description: "Nómina",
+    amount: "1500,50",
+    category: "Nómina",
+    kind: "income",
+  };
+  const state = addManualTransaction(initialState(), input);
+  assert.equal(state.transactions[0].amount, 150050);
+  assert.deepEqual(state.transactions[0].budget, { month: "2027-02", half: 1 });
+  assert.equal(reconcile(state.transactions).balance, null);
+  const next = addManualTransaction(state, {
+    ...input,
+    description: "Luz",
+    category: "Recibo",
+    kind: "expense",
+    amount: "50,25",
+    balance: "1450,25",
+  });
+  assert.equal(next.transactions[1].amount, -5025);
+  assert.equal(reconcile(next.transactions).balance, 145025);
+  assert.equal(reconcile(next.transactions).verified, false);
+  assert.deepEqual(restoreBackup(JSON.stringify(next)), next);
+  assert.equal(state.transactions.length, 1);
+  for (const invalid of [
+    { amount: "0" },
+    { amount: "-1" },
+    { amount: "1,001" },
+    { date: "2027-02-30" },
+    { description: " " },
+    { kind: "expense" },
+  ])
+    assert.throws(() => addManualTransaction(state, { ...input, ...invalid }));
+  const backdated = addManualTransaction(next, {
+    ...input,
+    date: "2027-01-01",
+    balance: "20",
+  });
+  assert.equal(backdated.transactions[0].date, "2027-01-01");
+  assert.ok(reconcile(backdated.transactions).errors.length);
+});
 test("céntimos exactos, decimales españoles y límites", () => {
   assert.equal(cents("1.806,99 €"), 180699);
   assert.equal(cents("-0,09"), -9);

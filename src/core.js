@@ -188,6 +188,45 @@ export function previewImport(
     });
   return { transactions, errors, duplicates };
 }
+export function addManualTransaction(state, input) {
+  const { date, category, kind } = input;
+  const description = String(input.description || "").trim();
+  const amount = cents(input.amount);
+  const balance = String(input.balance ?? "").trim()
+    ? cents(input.balance)
+    : null;
+  if (
+    !validDate(date) ||
+    !description ||
+    description.length > 300 ||
+    !CATEGORIES.includes(category) ||
+    !["expense", "income"].includes(kind) ||
+    amount <= 0
+  )
+    throw new Error("Revisa la fecha, el concepto y el importe positivo.");
+  if (
+    (category === "Nómina" || category === "Otros ingresos") &&
+    kind !== "income"
+  )
+    throw new Error("Una nómina o ingreso debe registrarse como entrada.");
+  const transaction = {
+    id: crypto.randomUUID(),
+    date,
+    valueDate: date,
+    description,
+    amount: kind === "expense" ? -amount : amount,
+    balance,
+    category,
+    budget: budgetFor(date, category),
+    source: "Manual",
+  };
+  return {
+    ...state,
+    transactions: [...state.transactions, transaction].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    ),
+  };
+}
 export function reconcile(transactions) {
   const ordered = [...transactions].sort((a, b) =>
     a.date.localeCompare(b.date),
